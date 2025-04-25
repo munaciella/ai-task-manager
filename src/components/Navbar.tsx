@@ -2,7 +2,7 @@ import Link from "next/link";
 import { SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-//import { ThemeToggle } from "./ThemeToggle";
+import ThemeToggle from "./ThemeToggle";
 
 const Navbar = () => {
   return (
@@ -31,6 +31,7 @@ const Navbar = () => {
             >Dashboard</Button>
           </Link>
 
+            <ThemeToggle />
           <UserButton />
           <SignedOut>
             <SignInButton
