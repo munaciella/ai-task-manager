@@ -1,66 +1,15 @@
-// 'use client';
-
-// import { useState } from 'react';
-// import { DndProvider } from 'react-dnd-multi-backend';
-// import { HTML5toTouch } from 'rdndmb-html5-to-touch';
-// import Column from './Column';
-// import type { ColumnId, Task } from '@/types/types';
-
-// const initialColumns: Record<ColumnId, { id: ColumnId; title: string }> = {
-//   todo:       { id: 'todo',       title: 'To Do' },
-//   inprogress: { id: 'inprogress', title: 'In Progress' },
-//   done:       { id: 'done',       title: 'Done' },
-// };
-
-// const initialTasks: Task[] = [
-//   { id: '1', title: 'Set up Clerk auth',   status: 'done'       },
-//   { id: '2', title: 'Wire up Firebase',     status: 'inprogress' },
-//   { id: '3', title: 'Add drag & drop UI',   status: 'todo'       },
-// ];
-
-// export default function Board() {
-//   const [tasks, setTasks] = useState<Task[]>(initialTasks);
-
-//   // change status & reorder
-//   const moveTask = (taskId: string, toStatus: ColumnId, toIndex: number) => {
-//     setTasks(prev => {
-//       const task     = prev.find(t => t.id === taskId)!;
-//       const others   = prev.filter(t => t.id !== taskId);
-//       task.status    = toStatus;
-//       others.splice(toIndex, 0, task);
-//       return others;
-//     });
-//   };
-
-//   return (
-//     <DndProvider 
-//       options={HTML5toTouch}
-//       >
-//       <div
-//         className="flex space-x-4 h-[calc(100vh-4rem)] p-4 overflow-x-auto"
-//         style={{
-//           backgroundImage: "url('/your-background.png')",
-//           backgroundSize: 'cover',
-//         }}
-//       >
-//         {Object.values(initialColumns).map(col => (
-//           <Column
-//             key={col.id}
-//             column={col}
-//             tasks={tasks.filter(t => t.status === col.id)}
-//             moveTask={moveTask}
-//           />
-//         ))}
-//       </div>
-//     </DndProvider>
-//   );
-// }
-
-
-// components/Board.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import {
+  collection,
+  query,
+  orderBy,
+  onSnapshot,
+  updateDoc,
+  doc,
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import {
   DndContext,
   closestCenter,
@@ -76,73 +25,102 @@ import {
 import Column from './Column';
 import type { ColumnId, Task } from '@/types/types';
 
-// 1) Re-declare these here (or import from a shared file)
+// Define your columns here (or import from a shared file)
 const initialColumns: Record<ColumnId, { id: ColumnId; title: string }> = {
   todo:       { id: 'todo',       title: 'To Do' },
   inprogress: { id: 'inprogress', title: 'In Progress' },
   done:       { id: 'done',       title: 'Done' },
 };
 
-const initialTasks: Task[] = [
-  { id: '1', title: 'Set up Clerk auth', status: 'done'       },
-  { id: '2', title: 'Wire up Firebase',  status: 'inprogress' },
-  { id: '3', title: 'Add drag & drop UI',status: 'todo'       },
-];
-
 export default function Board() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
+  // 1) Real-time listener: load all tasks ordered by createdAt
+  useEffect(() => {
+    const q = query(
+      collection(db, 'tasks'),
+      orderBy('createdAt', 'asc')
+    );
+    const unsubscribe = onSnapshot(q, snapshot => {
+      setTasks(
+        snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...(doc.data() as Omit<Task, 'id'>),
+        }))
+      );
+    });
+    return unsubscribe;
+  }, []);
+
+  // 2) Set up pointer sensor (works on mouse & touch)
   const sensors = useSensors(
-    useSensor(PointerSensor, { 
-        activationConstraint: { distance: 10 }, 
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 5 },
     })
   );
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  // 3) Handle drag end
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
 
     const activeId = active.id.toString();
     const overId   = over.id.toString();
 
-    setTasks(prev => {
-      // 2) If you dropped on a column (empty or not), move into it
-      if (Object.keys(initialColumns).includes(overId)) {
-        return prev.map(t =>
-          t.id === activeId ? { ...t, status: overId as ColumnId } : t
-        );
-      }
+    let newTasks = [...tasks];
+    let newStatus: ColumnId | null = null;
 
-      // 3) Otherwise you dropped on another task
-      const activeTask = prev.find(t => t.id === activeId)!;
-      const overTask   = prev.find(t => t.id === overId)!;
+    // a) Dropped on a column (empty or not)
+    if (Object.keys(initialColumns).includes(overId)) {
+      newStatus = overId as ColumnId;
+      newTasks = newTasks.map(t =>
+        t.id === activeId ? { ...t, status: newStatus! } : t
+      );
 
-      // a) If changing columns
+    } else {
+      // b) Dropped on another task
+      const activeTask = tasks.find(t => t.id === activeId)!;
+      const overTask   = tasks.find(t => t.id === overId)!;
+
+      // b1) Changed column
       if (activeTask.status !== overTask.status) {
-        return prev.map(t =>
-          t.id === activeId ? { ...t, status: overTask.status } : t
+        newStatus = overTask.status;
+        newTasks = tasks.map(t =>
+          t.id === activeId ? { ...t, status: newStatus! } : t
         );
+
+      } else {
+        // b2) Reordering within the same column
+        const sameColumnIds = tasks
+          .filter(t => t.status === activeTask.status)
+          .map(t => t.id);
+        const oldIndex = sameColumnIds.indexOf(activeId);
+        const newIndex = sameColumnIds.indexOf(overId);
+
+        // remove and reinsert at newIndex
+        const updated = [...tasks];
+        const [moved] = updated.splice(
+          updated.findIndex(t => t.id === activeId),
+          1
+        );
+        updated.splice(
+          updated.findIndex(t => t.id === overId) + (oldIndex < newIndex ? 1 : 0),
+          0,
+          moved
+        );
+        newTasks = updated;
       }
+    }
 
-      // b) Otherwise same‐column reordering
-      const sameColIds = prev
-        .filter(t => t.status === activeTask.status)
-        .map(t => t.id);
+    // 4) Apply optimistic local update
+    setTasks(newTasks);
 
-      const oldIndex = sameColIds.indexOf(activeId);
-      const newIndex = sameColIds.indexOf(overId);
-
-      const updated = [...prev];
-      const [moved] = updated.splice(
-        updated.findIndex(t => t.id === activeId), 1
-      );
-      updated.splice(
-        updated.findIndex(t => t.id === overId) + (oldIndex < newIndex ? 1 : 0),
-        0,
-        moved
-      );
-      return updated;
-    });
+    // 5) If status changed, persist it
+    if (newStatus) {
+      await updateDoc(doc(db, 'tasks', activeId), {
+        status: newStatus,
+      });
+    }
   };
 
   return (
@@ -159,8 +137,9 @@ export default function Board() {
         }}
       >
         {Object.values(initialColumns).map(col => {
-          const tasksForColumn = tasks.filter(t => t.status === col.id);
-          const itemIds        = tasksForColumn.map(t => t.id);
+          // Tasks for this column
+          const columnTasks = tasks.filter(t => t.status === col.id);
+          const itemIds     = columnTasks.map(t => t.id);
 
           return (
             <SortableContext
@@ -168,7 +147,7 @@ export default function Board() {
               items={itemIds}
               strategy={verticalListSortingStrategy}
             >
-              <Column column={col} tasks={tasksForColumn} />
+              <Column column={col} tasks={columnTasks} />
             </SortableContext>
           );
         })}
@@ -176,4 +155,3 @@ export default function Board() {
     </DndContext>
   );
 }
-
