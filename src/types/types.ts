@@ -4,7 +4,7 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  dueDate?: Date | null;
+  dueDate?: Timestamp | Date | null;
   priority?: 'low' | 'medium' | 'high';
   status: string;
   ownerId?: string;

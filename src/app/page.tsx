@@ -1,5 +1,3 @@
-import { Button } from "@/components/ui/button";
-
 export default function Home() {
   return (
     <main className="flex flex-col items-center justify-between py-14">
@@ -21,9 +19,6 @@ export default function Home() {
       </div>
 
       <h1 className="text-4xl font-bold mt-10">AI Task Manager</h1>
-      <Button variant="destructive" className="mt-4">
-        Get Started
-      </Button>
     </main>
   );
 }

@@ -1,4 +1,3 @@
-// components/NewColumnForm.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,7 +20,6 @@ export default function NewColumnForm() {
   const [title, setTitle]     = useState('');
   const [position, setPosition] = useState(0);
 
-  // Count existing dynamic columns so new one appends at end
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user) return;
     const q = query(
