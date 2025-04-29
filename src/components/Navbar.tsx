@@ -3,6 +3,7 @@ import { SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import ThemeToggle from "./ThemeToggle";
+import logo from "../../public/ChatGPT Image Apr 21, 2025, 11_19_04 PM.png";
 
 const Navbar = () => {
   return (
@@ -11,7 +12,7 @@ const Navbar = () => {
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
           <Image
-            src={"/logo.png"}
+            src={logo}
             alt="Logo"
             width={40}
             height={40}

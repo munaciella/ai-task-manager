@@ -1,4 +1,3 @@
-// components/Column.tsx
 'use client';
 
 import { useDroppable } from '@dnd-kit/core';
