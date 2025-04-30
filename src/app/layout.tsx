@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Navbar from "@/components/Navbar";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,6 +45,13 @@ export default function RootLayout({
         {children}
         </main>
         
+        <Toaster
+              position="bottom-right"
+              toastOptions={{
+                style: { fontSize: "14px" },
+                duration: 4000,
+              }}
+            />
         </ThemeProvider>
       </body>
     </html>

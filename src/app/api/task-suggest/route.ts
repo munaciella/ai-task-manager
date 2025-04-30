@@ -1,15 +1,20 @@
-// src/app/api/task-suggest/route.ts
 import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { addDays, formatISO } from 'date-fns';
+import { auth } from '@clerk/nextjs/server';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
 
 export async function POST(request: Request) {
+  const { userId } = await auth();
   const { title, description } = await request.json();
 
+  if (!userId) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   const today       = new Date();
-  const todayStr    = formatISO(today, { representation: 'date' });         // e.g. "2025-04-29"
+  const todayStr    = formatISO(today, { representation: 'date' });
   const maxDueDate  = formatISO(addDays(today, 30), { representation: 'date' });
   
   if (!title) {
@@ -29,7 +34,7 @@ Respond *only* with a JSON object, for example:
 
   try {
     const chat = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-3.5-turbo',
       messages: [{ role: 'user', content: prompt }],
       temperature: 0.7,
     });
@@ -45,7 +50,6 @@ Respond *only* with a JSON object, for example:
       priority: 'low' | 'medium' | 'high';
     };
 
-    // 2) Sanity check the date
     const due = new Date(suggestion.dueDate);
     if (
       isNaN(due.getTime()) ||
