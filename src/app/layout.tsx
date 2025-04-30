@@ -44,6 +44,18 @@ export default function RootLayout({
         {children}
         </main>
         
+<<<<<<< Updated upstream
+=======
+        <Toaster
+              position="bottom-right"
+              richColors
+              closeButton
+              toastOptions={{
+                style: { fontSize: "14px" },
+                duration: 5000,
+              }}
+            />
+>>>>>>> Stashed changes
         </ThemeProvider>
       </body>
     </html>
