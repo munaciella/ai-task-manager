@@ -4,6 +4,7 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import Navbar from "@/components/Navbar";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,8 +45,6 @@ export default function RootLayout({
         {children}
         </main>
         
-<<<<<<< Updated upstream
-=======
         <Toaster
               position="bottom-right"
               richColors
@@ -55,7 +54,6 @@ export default function RootLayout({
                 duration: 5000,
               }}
             />
->>>>>>> Stashed changes
         </ThemeProvider>
       </body>
     </html>

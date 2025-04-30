@@ -165,7 +165,7 @@ export default function Board() {
         <div
           className="flex space-x-4 h-[calc(100vh-4rem)] p-4 overflow-x-auto touch-pan-y"
           style={{
-            backgroundImage: "url('/your-background.png')",
+            backgroundImage: "url('/bg.jpg')",
             backgroundSize: 'cover',
           }}
         >
