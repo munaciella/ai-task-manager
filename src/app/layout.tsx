@@ -47,9 +47,11 @@ export default function RootLayout({
         
         <Toaster
               position="bottom-right"
+              richColors
+              closeButton
               toastOptions={{
                 style: { fontSize: "14px" },
-                duration: 4000,
+                duration: 5000,
               }}
             />
         </ThemeProvider>

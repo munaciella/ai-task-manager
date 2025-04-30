@@ -1,20 +1,21 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useUser } from '@clerk/nextjs';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 
 interface NewTaskFormProps {
   onSuccess: () => void;
@@ -22,55 +23,93 @@ interface NewTaskFormProps {
 
 export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
   const { user, isLoaded, isSignedIn } = useUser();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>('low');
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [priority, setPriority] = useState<"low" | "medium" | "high">("low");
   const [saving, setSaving] = useState(false);
-  const [suggesting, setSuggesting]   = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
 
   const handleSuggest = async () => {
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      toast.warning('Enter a title first', {
+        description: 'AI needs a title to suggest a due date & priority',
+        style: { backgroundColor: "#EAB308", color: "black"}
+      });
+      return;
+    }
     setSuggesting(true);
     try {
-      const res = await fetch('/api/task-suggest', {
-        method: 'POST',
-        headers: {'Content-Type':'application/json'},
+      const res = await fetch("/api/task-suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, description }),
       });
       if (res.ok) {
         const { dueDate: d, priority: p } = await res.json();
         setDueDate(d);
         setPriority(p);
+        toast.success("Suggestion applied!", {
+          description: `Due date: ${d}, Priority: ${p}`,
+          style: { backgroundColor: "#16A34A", color: "white"}
+        });
       } else {
-        console.error('Suggest failed', await res.text());
+        const errText = await res.text();
+        console.error('Suggest failed', errText);
+        toast.error('Failed to get suggestion', {
+          description: 'Please try again.',
+          style: { backgroundColor: "#DC2626", color: "white"}
+        });
       }
     } catch (err) {
       console.error(err);
+      toast.error('Error during suggestion', {
+        description: 'Please try again.',
+        style: { backgroundColor: "#DC2626", color: "white"}
+      });
     } finally {
       setSuggesting(false);
     }
-  }
+  };
 
   const handleSave = async () => {
-    if (!title.trim() || !isLoaded || !isSignedIn || !user) {
+    if (!title.trim()) {
+      toast.warning('Title is required');
+      return;
+    }
+    if (!isLoaded || !isSignedIn || !user) {
+      toast.warning('You need to be signed in to save tasks', {
+        description: 'Redirecting to sign-in…',
+        style: { backgroundColor: "#EAB308", color: "black"}
+      });
       return;
     }
 
     setSaving(true);
-
-    await addDoc(collection(db, 'tasks'), {
-      title:       title.trim(),
-      description: description.trim(),
-      dueDate:     dueDate ? new Date(dueDate) : null,
-      priority,
-      status:      'todo',
-      createdAt:   serverTimestamp(),
-      ownerId:     user.id,
-    });
-
-    setSaving(false);
-    onSuccess();
+    try {
+      await addDoc(collection(db, 'tasks'), {
+        title:       title.trim(),
+        description: description.trim(),
+        dueDate:     dueDate ? new Date(dueDate) : null,
+        priority,
+        status:      'todo',
+        createdAt:   serverTimestamp(),
+        ownerId:     user.id,
+      });
+      toast.success('Task created!', {
+        description: 'Your new task has been saved.',
+        style: { backgroundColor: "#16A34A", color: "white"}
+      });
+      onSuccess();
+    } catch (err) {
+      console.error('Save failed', err);
+      toast.error('Failed to save task', {
+        description: 'Please try again.',
+        style: { backgroundColor: "#DC2626", color: "white"}
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -105,10 +144,9 @@ export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
           onClick={handleSuggest}
           disabled={suggesting || !title.trim()}
         >
-          {suggesting ? 'Thinking…' : 'Suggest Date & Priority'}
+          {suggesting ? "Thinking…" : "Suggest Date & Priority"}
         </Button>
       </div>
-
 
       <div>
         <Label htmlFor="dueDate">Due Date</Label>
@@ -125,9 +163,7 @@ export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
         <Label htmlFor="priority">Priority</Label>
         <Select
           value={priority}
-          onValueChange={(v) =>
-            setPriority(v as 'low' | 'medium' | 'high')
-          }
+          onValueChange={(v) => setPriority(v as "low" | "medium" | "high")}
           disabled={saving || suggesting}
         >
           <SelectTrigger id="priority">
@@ -142,11 +178,18 @@ export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
       </div>
 
       <div className="flex justify-end space-x-2">
-        <Button variant="secondary" onClick={onSuccess} disabled={saving || suggesting}>
+        <Button
+          variant="secondary"
+          onClick={onSuccess}
+          disabled={saving || suggesting}
+        >
           Cancel
         </Button>
-        <Button onClick={handleSave} disabled={saving || !isSignedIn || suggesting || !title.trim()}>
-          {saving ? 'Saving…' : 'Save'}
+        <Button
+          onClick={handleSave}
+          disabled={saving || !isSignedIn || suggesting || !title.trim()}
+        >
+          {saving ? "Saving…" : "Save"}
         </Button>
       </div>
     </div>
