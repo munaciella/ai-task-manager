@@ -39,7 +39,7 @@ export default function Board() {
   const [dynCols, setDynCols]     = useState<ColumnType[]>([]);
   const [sortOrder, setSortOrder] = useState<'asc'|'desc'>('asc');
 
-  // Load dynamic columns from Firestore
+  // Load dynamic columns
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user) return;
     const colQ = query(
@@ -58,7 +58,7 @@ export default function Board() {
     return unsubCols;
   }, [isLoaded, isSignedIn, user]);
 
-  // Load tasks for user, sorted by createdAt
+  // Load tasks
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user) return;
     const taskQ = query(
@@ -77,7 +77,7 @@ export default function Board() {
     return unsubTasks;
   }, [isLoaded, isSignedIn, user, sortOrder]);
 
-  // DnD sensors
+  // Drag & drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
@@ -90,8 +90,8 @@ export default function Board() {
     const { active, over } = event;
     if (!over) return;
 
-    const activeId = active.id.toString();
-    const overId   = over.id.toString();
+    const activeId = String(active.id);
+    const overId   = String(over.id);
 
     let newTasks = [...tasks];
     let newStatus: string | null = null;
@@ -111,9 +111,7 @@ export default function Board() {
           t.id === activeId ? { ...t, status: newStatus! } : t
         );
       } else {
-        const same = tasks
-          .filter(t => t.status === a.status)
-          .map(t => t.id);
+        const same = tasks.filter(t => t.status === a.status).map(t => t.id);
         const oldIndex = same.indexOf(activeId);
         const newIndex = same.indexOf(overId);
 
@@ -140,11 +138,9 @@ export default function Board() {
 
   return (
     <>
-      {/* Sort control (optional) */}
+      {/* Sort control */}
       <div className="mb-4 flex items-center space-x-2">
-        <label htmlFor="sort" className="text-sm font-medium">
-          Sort:
-        </label>
+        <label htmlFor="sort" className="text-sm font-medium">Sort:</label>
         <select
           id="sort"
           value={sortOrder}
@@ -179,7 +175,11 @@ export default function Board() {
                 items={ids}
                 strategy={verticalListSortingStrategy}
               >
-                <Column column={col} tasks={colTasks} />
+                <Column
+                  column={col}
+                  tasks={colTasks}
+                  allColumns={columns}
+                />
               </SortableContext>
             );
           })}
