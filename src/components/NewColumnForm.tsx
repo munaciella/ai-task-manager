@@ -14,11 +14,13 @@ import {
 import { db } from '@/lib/firebase';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 export default function NewColumnForm() {
   const { user, isLoaded, isSignedIn } = useUser();
-  const [title, setTitle]     = useState('');
-  const [position, setPosition] = useState(0);
+  const [title, setTitle]             = useState('');
+  const [position, setPosition]       = useState(0);
+  const [saving, setSaving]           = useState(false);
 
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user) return;
@@ -31,14 +33,43 @@ export default function NewColumnForm() {
   }, [isLoaded, isSignedIn, user]);
 
   const handleAdd = async () => {
-    if (!title.trim() || !isSignedIn || !user) return;
-    await addDoc(collection(db, 'columns'), {
-      title:     title.trim(),
-      position,
-      ownerId:   user.id,
-      createdAt: serverTimestamp(),
-    });
-    setTitle('');
+    if (!title.trim()) {
+      toast.warning('Column name cannot be empty', {
+        description: 'Please enter a valid column name.',
+        style: { backgroundColor: '#EAB308', color: 'black' },
+      });
+      return;
+    }
+    if (!isLoaded || !isSignedIn || !user) {
+      toast.error('You must be signed in to add a column', {
+        description: 'Please sign in to create a new column.',
+        style: { backgroundColor: '#DC2626', color: 'white' },
+      });
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await addDoc(collection(db, 'columns'), {
+        title:     title.trim(),
+        position,
+        ownerId:   user.id,
+        createdAt: serverTimestamp(),
+      });
+      toast.success('Column created', {
+        description: 'Your new column has been created successfully.',
+        style: { backgroundColor: '#16A34A', color: 'white' },
+      });
+      setTitle('');
+    } catch (err) {
+      console.error('Failed to add column', err);
+      toast.error('Failed to create column', {
+        description: 'Please try again later.',
+        style: { backgroundColor: '#DC2626', color: 'white' },
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -48,9 +79,14 @@ export default function NewColumnForm() {
         className="max-w-xs"
         value={title}
         onChange={e => setTitle(e.target.value)}
+        disabled={saving}
       />
-      <Button size="sm" onClick={handleAdd} disabled={!title.trim()}>
-        Add Column
+      <Button
+        size="sm"
+        onClick={handleAdd}
+        disabled={!title.trim() || saving}
+      >
+        {saving ? 'Adding…' : 'Add Column'}
       </Button>
     </div>
   );

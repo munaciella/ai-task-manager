@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useUser } from "@clerk/nextjs";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  orderBy,
+  onSnapshot,
+  serverTimestamp,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
 import {
   Select,
   SelectTrigger,
@@ -16,6 +25,13 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
+import type { Column } from "@/types/types";
+
+const staticColumns: Column[] = [
+  { id: "todo", title: "To Do" },
+  { id: "inprogress", title: "In Progress" },
+  { id: "done", title: "Done" },
+];
 
 interface NewTaskFormProps {
   onSuccess: () => void;
@@ -23,18 +39,47 @@ interface NewTaskFormProps {
 
 export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
   const { user, isLoaded, isSignedIn } = useUser();
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("low");
+  const [status, setStatus] = useState<string>("todo");
   const [saving, setSaving] = useState(false);
   const [suggesting, setSuggesting] = useState(false);
 
+  const [dynCols, setDynCols] = useState<Column[]>([]);
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !user) return;
+    const colQ = query(
+      collection(db, "columns"),
+      where("ownerId", "==", user.id),
+      orderBy("position", "asc")
+    );
+    const unsub = onSnapshot(colQ, (snap) => {
+      setDynCols(
+        snap.docs.map((d) => ({
+          id: d.id,
+          title: d.data().title as string,
+        }))
+      );
+    });
+    return unsub;
+  }, [isLoaded, isSignedIn, user]);
+
+  const columns = useMemo(() => [...staticColumns, ...dynCols], [dynCols]);
+
+  useEffect(() => {
+    if (!columns.find((c) => c.id === status)) {
+      setStatus(columns[0]?.id || "todo");
+    }
+  }, [columns, status]);
+
   const handleSuggest = async () => {
     if (!title.trim()) {
-      toast.warning('Enter a title first', {
-        description: 'AI needs a title to suggest a due date & priority',
-        style: { backgroundColor: "#EAB308", color: "black"}
+      toast.warning("Enter a title first", {
+        description: "AI needs a title to suggest a due date & priority",
+        style: { backgroundColor: "#EAB308", color: "black" },
       });
       return;
     }
@@ -50,22 +95,19 @@ export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
         setDueDate(d);
         setPriority(p);
         toast.success("Suggestion applied!", {
-          description: `Due date: ${d}, Priority: ${p}`,
-          style: { backgroundColor: "#16A34A", color: "white"}
+          description: `Due: ${d}, Priority: ${p}`,
+          style: { backgroundColor: "#16A34A", color: "white" },
         });
       } else {
-        const errText = await res.text();
-        console.error('Suggest failed', errText);
-        toast.error('Failed to get suggestion', {
-          description: 'Please try again.',
-          style: { backgroundColor: "#DC2626", color: "white"}
+        toast.error("AI suggestion failed", {
+          description: "Please try again later.",
+          style: { backgroundColor: "#DC2626", color: "white" },
         });
       }
-    } catch (err) {
-      console.error(err);
-      toast.error('Error during suggestion', {
-        description: 'Please try again.',
-        style: { backgroundColor: "#DC2626", color: "white"}
+    } catch {
+      toast.error("Network error during suggestion", {
+        description: "Please check your connection and try again.",
+        style: { backgroundColor: "#DC2626", color: "white" },
       });
     } finally {
       setSuggesting(false);
@@ -74,38 +116,42 @@ export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
 
   const handleSave = async () => {
     if (!title.trim()) {
-      toast.warning('Title is required');
+      toast.warning("Title is required", {
+        description: "Please enter a title for the task.",
+        style: { backgroundColor: "#EAB308", color: "black" },
+      });
       return;
     }
     if (!isLoaded || !isSignedIn || !user) {
-      toast.warning('You need to be signed in to save tasks', {
-        description: 'Redirecting to sign-in…',
-        style: { backgroundColor: "#EAB308", color: "black"}
+      toast.warning("You must sign in to create tasks", {
+        description: "Please sign in to continue.",
+        style: { backgroundColor: "#EAB308", color: "black" },
       });
       return;
     }
 
     setSaving(true);
     try {
-      await addDoc(collection(db, 'tasks'), {
-        title:       title.trim(),
+      await addDoc(collection(db, "tasks"), {
+        title: title.trim(),
         description: description.trim(),
-        dueDate:     dueDate ? new Date(dueDate) : null,
+        dueDate: dueDate ? new Date(dueDate) : null,
         priority,
-        status:      'todo',
-        createdAt:   serverTimestamp(),
-        ownerId:     user.id,
+        status,
+        createdAt: serverTimestamp(),
+        ownerId: user.id,
       });
-      toast.success('Task created!', {
-        description: 'Your new task has been saved.',
-        style: { backgroundColor: "#16A34A", color: "white"}
+      toast.success("Task created!", {
+        description: `"${title}" added to ${
+          columns.find((c) => c.id === status)?.title
+        }`,
+        style: { backgroundColor: "#16A34A", color: "white" },
       });
       onSuccess();
-    } catch (err) {
-      console.error('Save failed', err);
-      toast.error('Failed to save task', {
-        description: 'Please try again.',
-        style: { backgroundColor: "#DC2626", color: "white"}
+    } catch {
+      toast.error("Failed to save task", {
+        description: "Please try again later.",
+        style: { backgroundColor: "#DC2626", color: "white" },
       });
     } finally {
       setSaving(false);
@@ -114,25 +160,27 @@ export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
 
   return (
     <div className="space-y-4 mt-4">
+      {/* Title */}
       <div>
         <Label htmlFor="title">Title</Label>
         <Input
           id="title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="My awesome task"
           disabled={saving || suggesting}
+          className="mt-1"
         />
       </div>
 
+      {/* Description */}
       <div>
         <Label htmlFor="description">Description</Label>
         <Textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Add more context…"
           disabled={saving || suggesting}
+          className="mt-1"
         />
       </div>
 
@@ -148,6 +196,7 @@ export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
         </Button>
       </div>
 
+      {/* Due Date */}
       <div>
         <Label htmlFor="dueDate">Due Date</Label>
         <Input
@@ -156,18 +205,20 @@ export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
           disabled={saving || suggesting}
+          className="mt-1"
         />
       </div>
 
+      {/* Priority */}
       <div>
         <Label htmlFor="priority">Priority</Label>
         <Select
           value={priority}
-          onValueChange={(v) => setPriority(v as "low" | "medium" | "high")}
+          onValueChange={(v: "low" | "medium" | "high") => setPriority(v)}
           disabled={saving || suggesting}
         >
           <SelectTrigger id="priority">
-            <SelectValue placeholder="Select priority" />
+            <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="low">Low</SelectItem>
@@ -177,6 +228,28 @@ export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
         </Select>
       </div>
 
+      {/* Column selector */}
+      <div>
+        <Label htmlFor="column">Column</Label>
+        <Select
+          value={status}
+          onValueChange={(v) => setStatus(v)}
+          disabled={saving}
+        >
+          <SelectTrigger id="column">
+            <SelectValue placeholder="Select column" />
+          </SelectTrigger>
+          <SelectContent>
+            {columns.map((col) => (
+              <SelectItem key={col.id} value={col.id}>
+                {col.title}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Actions */}
       <div className="flex justify-end space-x-2">
         <Button
           variant="secondary"
@@ -185,10 +258,7 @@ export default function NewTaskForm({ onSuccess }: NewTaskFormProps) {
         >
           Cancel
         </Button>
-        <Button
-          onClick={handleSave}
-          disabled={saving || !isSignedIn || suggesting || !title.trim()}
-        >
+        <Button onClick={handleSave} disabled={saving || suggesting}>
           {saving ? "Saving…" : "Save"}
         </Button>
       </div>
