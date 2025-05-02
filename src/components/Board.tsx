@@ -27,17 +27,26 @@ import {
 import Column from './Column';
 import type { Column as ColumnType, Task } from '@/types/types';
 
+interface BoardProps {
+  searchTerm: string;
+  priorityFilter: 'all'|'low'|'medium'|'high';
+};
+
 const staticColumns: ColumnType[] = [
   { id: 'todo',       title: 'To Do' },
   { id: 'inprogress', title: 'In Progress' },
   { id: 'done',       title: 'Done' },
 ];
 
-export default function Board() {
+export default function Board({
+  searchTerm,
+  priorityFilter,
+}: BoardProps) {
   const { user, isLoaded, isSignedIn } = useUser();
   const [tasks, setTasks]         = useState<Task[]>([]);
   const [dynCols, setDynCols]     = useState<ColumnType[]>([]);
   const [sortOrder, setSortOrder] = useState<'asc'|'desc'>('asc');
+  const [collapsed, setCollapsed] = useState<Record<string,boolean>>({});
 
   // Load dynamic columns
   useEffect(() => {
@@ -85,6 +94,10 @@ export default function Board() {
   // Combine static + dynamic columns
   const columns = [...staticColumns, ...dynCols];
   const colIds  = new Set(columns.map(c => c.id));
+
+  // Toggle collapsed state
+  const toggleCollapse = (colId: string) =>
+    setCollapsed(c => ({ ...c, [colId]: !c[colId] }));
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -166,8 +179,21 @@ export default function Board() {
           }}
         >
           {columns.map(col => {
-            const colTasks = tasks.filter(t => t.status === col.id);
-            const ids      = colTasks.map(t => t.id);
+            // 1) Only tasks in this column
+            // 2) Then filter by searchTerm
+            // 3) Then filter by priorityFilter
+            const colTasks = tasks
+              .filter(t => t.status === col.id)
+              .filter(t =>
+                t.title.toLowerCase().includes(searchTerm.toLowerCase())
+              )
+              .filter(t =>
+                priorityFilter === 'all'
+                  ? true
+                  : t.priority === priorityFilter
+              );
+
+            const ids = colTasks.map(t => t.id);
 
             return (
               <SortableContext
@@ -179,6 +205,8 @@ export default function Board() {
                   column={col}
                   tasks={colTasks}
                   allColumns={columns}
+                  collapsed={!!collapsed[col.id]}
+                  onToggleCollapse={() => toggleCollapse(col.id)}
                 />
               </SortableContext>
             );
