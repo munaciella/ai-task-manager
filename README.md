@@ -19,9 +19,6 @@ I’ll get back to you as soon as possible.
 
 ---
 
-```markdown
-# Flowly
-
 **Flowly** is a real-time, AI-powered Kanban-style task manager that helps teams and individuals organize, prioritize, and collaborate on tasks seamlessly. Built with Next.js, Clerk for authentication, Firebase Firestore for real-time data, and OpenAI for smart suggestions.
 
 ---
