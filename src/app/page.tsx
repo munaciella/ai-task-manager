@@ -93,7 +93,7 @@ export default function Home() {
     </p>
 
           <h2 className="text-lg font-semibold leading-7 mt-6">
-            AI Task Manager
+            Flowly
           </h2>
           <p className="mt-2 text-4xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-6xl">
             Organise & Automate Your Workflow
