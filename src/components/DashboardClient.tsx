@@ -58,7 +58,7 @@ export default function DashboardClient({ userName }: DashboardClientProps) {
         </div>
       </div>
 
-      {/* NEW: Search + Priority Filter */}
+      {/* Search + Priority Filter */}
       <div className="flex flex-wrap items-center gap-4">
         <Input
           placeholder="Search tasks…"

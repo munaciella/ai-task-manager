@@ -43,14 +43,6 @@ const Footer = () => {
               Get in touch
             </h3>
             <ul className="space-y-2">
-              {/* <li>
-                <Link
-                  href="/cookies"
-                  className="hover:underline underline-offset-4 hover:text-indigo-500 transition"
-                >
-                  Cookie Policy
-                </Link>
-              </li> */}
               <li>
                 <Link
                   href="mailto:francesco.vurchio82@gmail.com"

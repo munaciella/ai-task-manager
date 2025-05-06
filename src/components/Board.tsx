@@ -91,7 +91,6 @@ export default function Board({
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
 
-  // Combine static + dynamic columns
   const columns = [...staticColumns, ...dynCols];
   const colIds  = new Set(columns.map(c => c.id));
 
@@ -179,9 +178,6 @@ export default function Board({
           }}
         >
           {columns.map(col => {
-            // 1) Only tasks in this column
-            // 2) Then filter by searchTerm
-            // 3) Then filter by priorityFilter
             const colTasks = tasks
               .filter(t => t.status === col.id)
               .filter(t =>

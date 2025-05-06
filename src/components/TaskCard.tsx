@@ -75,7 +75,6 @@ export default function TaskCard({ task, allColumns }: TaskCardProps) {
   const displayDate = dueDate ? format(new Date(dueDate), 'dd/MM/yyyy') : null;
   const priLabel    = priority.charAt(0).toUpperCase() + priority.slice(1);
 
-  // Handlers
   const handleDelete = async () => {
     try {
       await deleteDoc(doc(db, 'tasks', task.id));
