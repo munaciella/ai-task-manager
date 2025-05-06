@@ -55,7 +55,7 @@ Flowly is designed to streamline your workflow by combining the simplicity of a 
 
 ## Demo
 
-[Click to view the deployed version](https://applywise-one.vercel.app/)
+[Click to view the deployed version](https://flowly-chi.vercel.app/)
 
 ---
 

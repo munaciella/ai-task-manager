@@ -5,6 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import Navbar from "@/components/Navbar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
+import Footer from "@/components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AI Task Manager",
+  title: "Flowly",
   description: "A task manager powered by AI",
 };
 
@@ -41,9 +42,11 @@ export default function RootLayout({
 
         <Navbar />
 
-        <main className="flex-grow px-4 pt-24 pb-20">
+        <main className="flex-grow px-4 pt-24 pb-28">
         {children}
         </main>
+
+        <Footer />
         
         <Toaster
               position="bottom-right"
