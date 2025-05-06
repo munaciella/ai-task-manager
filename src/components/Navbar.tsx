@@ -18,7 +18,7 @@ const Navbar = () => {
             className="rounded-full"
           />
           <span className="text-lg font-bold text-gray-900 dark:text-white">
-            Flowey
+            Flowly
           </span>
         </Link>
 
