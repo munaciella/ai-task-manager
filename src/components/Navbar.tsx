@@ -15,7 +15,6 @@ const Navbar = () => {
             alt="Logo"
             width={60}
             height={60}
-            className="rounded-full"
           />
           <span className="text-lg font-bold text-gray-900 dark:text-white">
             Flowly
@@ -23,7 +22,7 @@ const Navbar = () => {
         </Link>
 
         {/* Dashboard, Auth & Toggle */}
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-2 mr-2">
           <Link href="/dashboard" passHref>
             <Button 
             variant="link"
