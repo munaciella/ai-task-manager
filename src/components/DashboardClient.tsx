@@ -35,12 +35,12 @@ export default function DashboardClient({ userName }: DashboardClientProps) {
   >("all");
 
   return (
-    <div className="p-4 pt-16 space-y-6">
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-6 md:pt-6 pt-4 space-y-6">
+      <div className="flex items-center justify-between mb-4">
         <h1 className="text-3xl font-bold">
           Welcome to your Task Board, {userName}!
         </h1>
-        <div className="flex items-center space-x-2">
+        <div className="flex flex-col md:flex-row md:items-center space-y-2 md:space-y-0 md:space-x-2">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
               <Button>+ New Task</Button>

@@ -3,8 +3,7 @@ import { SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import ThemeToggle from "./ThemeToggle";
-import logo from "../../public/ChatGPT Image Apr 21, 2025, 11_19_04 PM.png";
-
+import logo from "../../public/logo.png";
 const Navbar = () => {
   return (
     <header className="fixed top-0 left-0 w-full z-50 backdrop-blur-md transition-colors duration-300 bg-white/80 dark:bg-slate-900/80 shadow">
@@ -14,12 +13,12 @@ const Navbar = () => {
           <Image
             src={logo}
             alt="Logo"
-            width={40}
-            height={40}
+            width={60}
+            height={60}
             className="rounded-full"
           />
           <span className="text-lg font-bold text-gray-900 dark:text-white">
-            AI Task Manager
+            Flowey
           </span>
         </Link>
 
