@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import AuthBridge from "@/components/AuthBridge";
 import Navbar from "@/components/Navbar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
@@ -29,26 +30,25 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
-      >
-        <ThemeProvider
+      <html lang="en" suppressHydrationWarning>
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
+        >
+          <AuthBridge />
+
+          <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
             disableTransitionOnChange
           >
+            <Navbar />
 
-        <Navbar />
+            <main className="flex-grow px-4 pt-24 pb-28">{children}</main>
 
-        <main className="flex-grow px-4 pt-24 pb-28">
-        {children}
-        </main>
+            <Footer />
 
-        <Footer />
-        
-        <Toaster
+            <Toaster
               position="bottom-right"
               richColors
               closeButton
@@ -57,9 +57,9 @@ export default function RootLayout({
                 duration: 5000,
               }}
             />
-        </ThemeProvider>
-      </body>
-    </html>
+          </ThemeProvider>
+        </body>
+      </html>
     </ClerkProvider>
   );
 }
