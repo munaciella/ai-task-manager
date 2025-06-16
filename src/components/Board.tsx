@@ -48,7 +48,6 @@ export default function Board({
   const [sortOrder, setSortOrder] = useState<'asc'|'desc'>('asc');
   const [collapsed, setCollapsed] = useState<Record<string,boolean>>({});
 
-  // Load dynamic columns
   useEffect(() => {
     if (!isLoaded || !isSignedIn || !user) return;
     const colQ = query(
@@ -86,7 +85,6 @@ export default function Board({
     return unsubTasks;
   }, [isLoaded, isSignedIn, user, sortOrder]);
 
-  // Drag & drop sensors
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
   );
@@ -94,7 +92,6 @@ export default function Board({
   const columns = [...staticColumns, ...dynCols];
   const colIds  = new Set(columns.map(c => c.id));
 
-  // Toggle collapsed state
   const toggleCollapse = (colId: string) =>
     setCollapsed(c => ({ ...c, [colId]: !c[colId] }));
 
